@@ -1,0 +1,261 @@
+{% extends 'base.html' %}
+{% block extra_css %}
+<style>
+    body {
+        background-color: #f5f7fb;
+    }
+
+    .calendar-card {
+        border: none;
+        border-radius: 15px;
+    }
+
+    #calendarDays {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+    }
+
+    .calendar-weekdays {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+    }
+
+    .calendar-day {
+        min-height: 110px;
+        border: 1px solid #eef0f3;
+        background: #fff;
+        padding: 6px 8px;
+        overflow: hidden;
+    }
+
+    .calendar-day.other-month {
+        background-color: #fafbfc;
+        color: #adb5bd;
+    }
+
+    .day-number {
+        font-size: 0.85rem;
+        font-weight: 600;
+        margin-bottom: 4px;
+    }
+
+    .today .day-number {
+        background-color: #0d6efd;
+        color: white;
+        border-radius: 50%;
+        width: 26px;
+        height: 26px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.8rem;
+    }
+
+    .calendar-event {
+        color: white;
+        border-radius: 4px;
+        padding: 2px 6px;
+        margin-bottom: 3px;
+        font-size: 11px;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+
+    .meeting { background-color: #0d6efd; }
+    .interview { background-color: #6f42c1; }
+    .leave { background-color: #dc3545; }
+    .holiday { background-color: #198754; }
+    .training { background-color: #fd7e14; }
+    .other { background-color: #6c757d; }
+
+    @media (max-width: 768px) {
+        .calendar-day {
+            min-height: 70px;
+            padding: 4px;
+            font-size: 11px;
+        }
+        .calendar-event {
+            font-size: 8px;
+            padding: 1px 3px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+    <!-- Header -->
+    <div class="mb-4">
+        <h2 class="fw-bold mb-1">
+            <i class="bi bi-calendar3"></i>
+            Company Calendar
+        </h2>
+        <p class="text-muted mb-0">
+            View meetings, interviews, leaves and events
+        </p>
+    </div>
+
+    <!-- Calendar Card -->
+    <div class="card calendar-card shadow-sm">
+        <div class="card-body">
+
+            <!-- Navigation -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+                <h4 class="fw-bold mb-2 mb-md-0" id="monthYear"></h4>
+                <div class="btn-group">
+                    <button type="button" class="btn btn-outline-secondary" onclick="previousMonth()">&laquo;</button>
+                    <button type="button" class="btn btn-outline-primary" onclick="goToday()">Today</button>
+                    <button type="button" class="btn btn-outline-secondary" onclick="nextMonth()">&raquo;</button>
+                </div>
+            </div>
+
+            <!-- Weekday header -->
+            <div class="calendar-weekdays mb-1">
+                <div class="bg-light text-center fw-bold py-2">Sun</div>
+                <div class="bg-light text-center fw-bold py-2">Mon</div>
+                <div class="bg-light text-center fw-bold py-2">Tue</div>
+                <div class="bg-light text-center fw-bold py-2">Wed</div>
+                <div class="bg-light text-center fw-bold py-2">Thu</div>
+                <div class="bg-light text-center fw-bold py-2">Fri</div>
+                <div class="bg-light text-center fw-bold py-2">Sat</div>
+            </div>
+
+            <!-- Calendar days -->
+            <div id="calendarDays"></div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let currentDate = new Date();
+    let events = [];
+
+    /* ========= LOAD EVENTS (same shared data HR uses) ========= */
+
+    async function loadEvents() {
+        try {
+            const response = await fetch("{% url 'calendar_events' %}");
+            events = await response.json();
+            renderCalendar();
+        } catch (error) {
+            console.error(error);
+            alert("Unable to load calendar events.");
+        }
+    }
+
+    /* ========= RENDER CALENDAR ========= */
+
+    function renderCalendar() {
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth();
+
+        const monthNames = ["January","February","March","April","May","June",
+                             "July","August","September","October","November","December"];
+
+        document.getElementById("monthYear").textContent = `${monthNames[month]} ${year}`;
+
+        const firstDay = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const daysInPreviousMonth = new Date(year, month, 0).getDate();
+
+        const calendarDays = document.getElementById("calendarDays");
+        calendarDays.innerHTML = "";
+
+        for (let i = firstDay - 1; i >= 0; i--) {
+            const day = daysInPreviousMonth - i;
+            createDay(calendarDays, day, true, year, month - 1);
+        }
+
+        for (let day = 1; day <= daysInMonth; day++) {
+            createDay(calendarDays, day, false, year, month);
+        }
+
+        const total = calendarDays.children.length;
+        const remaining = 42 - total;
+
+        for (let day = 1; day <= remaining; day++) {
+            createDay(calendarDays, day, true, year, month + 1);
+        }
+    }
+
+    /* ========= CREATE DAY (view only — no click actions) ========= */
+
+    function createDay(container, day, otherMonth, year, month) {
+        const col = document.createElement("div");
+        col.className = "calendar-day";
+
+        if (otherMonth) {
+            col.classList.add("other-month");
+        }
+
+        const date = new Date(year, month, day);
+        const dateString = formatDate(date);
+        const today = new Date();
+
+        if (date.getDate() === today.getDate() &&
+            date.getMonth() === today.getMonth() &&
+            date.getFullYear() === today.getFullYear()) {
+            col.classList.add("today");
+        }
+
+        const number = document.createElement("div");
+        number.className = "day-number";
+        number.textContent = day;
+        col.appendChild(number);
+
+        const dayEvents = events.filter(event => {
+            const start = event.start.substring(0, 10);
+            const end = event.end ? event.end.substring(0, 10) : start;
+            return dateString >= start && dateString <= end;
+        });
+
+        dayEvents.forEach(event => {
+            const eventElement = document.createElement("div");
+            eventElement.className = `calendar-event ${event.category}`;
+            eventElement.textContent = event.title;
+            eventElement.title = event.title;
+            // No onclick — employees can't open any edit popup
+            col.appendChild(eventElement);
+        });
+
+        // No onclick on col either — clicking a day does nothing
+
+        container.appendChild(col);
+    }
+
+    /* ========= DATE FORMAT ========= */
+
+    function formatDate(date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
+    }
+
+    /* ========= NAVIGATION ========= */
+
+    function previousMonth() {
+        currentDate.setMonth(currentDate.getMonth() - 1);
+        renderCalendar();
+    }
+
+    function nextMonth() {
+        currentDate.setMonth(currentDate.getMonth() + 1);
+        renderCalendar();
+    }
+
+    function goToday() {
+        currentDate = new Date();
+        renderCalendar();
+    }
+
+    /* ========= START ========= */
+
+    loadEvents();
+</script>
+{% endblock %}

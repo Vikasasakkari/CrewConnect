@@ -1,0 +1,1464 @@
+{% extends "base.html" %}
+{% block extra_css %}
+<style>
+
+        body {
+            background-color: #f5f7fb;
+        }
+
+        .calendar-card {
+            border: none;
+            border-radius: 15px;
+        }
+
+        #calendarDays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+}
+
+.calendar-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+}
+
+.calendar-day {
+    min-height: 110px;
+    border: 1px solid #eef0f3;
+    background: #fff;
+    cursor: pointer;
+    padding: 6px 8px;
+    overflow: hidden;
+}
+
+.calendar-day.other-month {
+    background-color: #fafbfc;
+}
+
+.day-number {
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.today .day-number {
+    background-color: #0d6efd;
+    color: white;
+    border-radius: 50%;
+    width: 26px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+}
+
+.calendar-event {
+    color: white;
+    border-radius: 4px;
+    padding: 2px 6px;
+    margin-bottom: 3px;
+    font-size: 11px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    cursor: pointer;
+}
+
+
+        .calendar-day:hover {
+            background-color: #f8f9fa;
+        }
+
+        .day-number {
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .other-month {
+            background-color: #f8f9fa;
+            color: #adb5bd;
+        }
+
+        .today {
+            background-color: #e7f1ff;
+        }
+
+        .today .day-number {
+            background-color: #0d6efd;
+            color: white;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .calendar-event {
+            color: white;
+            border-radius: 5px;
+            padding: 4px 7px;
+            margin-bottom: 4px;
+            font-size: 12px;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+        }
+
+        .meeting {
+            background-color: #0d6efd;
+        }
+
+        .interview {
+            background-color: #6f42c1;
+        }
+
+        .leave {
+            background-color: #dc3545;
+        }
+
+        .holiday {
+            background-color: #198754;
+        }
+
+        .training {
+            background-color: #fd7e14;
+        }
+
+        .other {
+            background-color: #6c757d;
+        }
+
+    @media (max-width: 768px) {
+    .calendar-day {
+        min-height: 70px;
+        padding: 4px;
+        font-size: 11px;
+    }
+    .calendar-event {
+        font-size: 8px;
+        padding: 1px 3px;
+    }
+}
+
+</style>
+    {% endblock %}
+{% block content %}
+<div class="container-fluid">
+    <div class="mb-4">
+        <h2>Leave Approval</h2>
+        <p class="text-muted">
+            Review employee leave applications
+        </p>
+    </div>
+    <div class="card shadow-sm">
+        <div class="card-body">
+            {% if leaves %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+
+
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Employee</th>
+                                <th>Department</th>
+                                <th>Leave Type</th>
+                                <th>Start Date</th>
+                                <th>End Date</th>
+                                <th>Reason</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for leave in leaves %}
+                                <tr>
+                                    <td>
+                                        <strong>
+                                            {{ leave.employee.employee_id }}
+                                        </strong>
+                                        <br>
+                                        <small class="text-muted">
+                                            {{ leave.employee.name }}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        {{ leave.employee.department.name }}
+                                    </td>
+                                    <td>
+                                        {{ leave.get_leave_type_display }}
+                                    </td>
+                                    <td>
+                                        {{ leave.start_date }}
+                                    </td>
+                                    <td>
+                                        {{ leave.end_date }}
+                                    </td>
+                                    <td>
+                                        {{ leave.reason }}
+                                    </td>
+                                    <td>
+                                        {% if leave.status == "Approved" %}
+                                            <span class="badge bg-success">
+                                                Approved
+                                            </span>
+                                        {% elif leave.status == "Rejected" %}
+                                            <span class="badge bg-danger">
+                                                Rejected
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-warning text-dark">
+                                                Pending
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if leave.status == "Pending" %}
+                                            <form
+                                                method="POST"
+                                                action="{% url 'leave_action' leave.id %}"
+                                                class="d-flex gap-2"
+                                            >
+                                                {% csrf_token %}
+
+                                                <button
+                                                    type="submit"
+                                                    name="action"
+                                                    value="approve"
+                                                    class="btn btn-sm btn-success"
+                                                >
+                                                    Approve
+                                                </button>
+                                                <button
+                                                    type="submit"
+                                                    name="action"
+                                                    value="reject"
+                                                    class="btn btn-sm btn-danger"
+                                                >
+                                                    Reject
+                                                </button>
+                                            </form>
+
+
+                                        {% else %}
+
+
+                                            <span class="text-muted">
+                                                Completed
+                                            </span>
+
+
+                                        {% endif %}
+
+
+                                    </td>
+
+
+                                </tr>
+
+
+                            {% endfor %}
+
+
+                        </tbody>
+
+
+                    </table>
+
+
+                </div>
+
+
+            {% else %}
+
+
+                <div class="text-center py-5">
+
+
+                    <i class="bi bi-calendar-x fs-1"></i>
+
+
+                    <h5 class="mt-3">
+                        No Leave Applications
+                    </h5>
+
+
+                    <p class="text-muted">
+                        There are no leave requests.
+                    </p>
+
+
+                </div>
+
+
+            {% endif %}
+
+
+        </div>
+
+
+    </div>
+
+
+
+
+<div class="container-fluid py-5">
+
+    <!-- Header -->
+
+    <div class="d-flex flex-wrap
+                justify-content-between
+                align-items-center
+                mb-4">
+
+        <div>
+
+            <h2 class="fw-bold mb-1">
+                <i class="bi bi-calendar3"></i>
+                HR Calendar
+            </h2>
+
+            <p class="text-muted mb-0">
+                Manage meetings, interviews, leaves and events
+            </p>
+
+        </div>
+
+
+        <button type="button"
+                class="btn btn-primary"
+                onclick="openCreateModal()">
+
+            + Add Event
+
+        </button>
+
+    </div>
+
+
+    <!-- Calendar Card -->
+
+    <div class="card calendar-card shadow-sm">
+
+        <div class="card-body">
+
+
+            <!-- Calendar Navigation -->
+
+            <div class="d-flex flex-wrap
+                        justify-content-between
+                        align-items-center
+                        mb-3">
+
+                <h4 class="fw-bold mb-2 mb-md-0"
+                    id="monthYear">
+                </h4>
+
+
+                <div class="btn-group">
+
+                    <button type="button"
+                            class="btn btn-outline-secondary"
+                            onclick="previousMonth()">
+
+                        &laquo;
+
+                    </button>
+
+
+                    <button type="button"
+                            class="btn btn-outline-primary"
+                            onclick="goToday()">
+
+                        Today
+
+                    </button>
+
+
+                    <button type="button"
+                            class="btn btn-outline-secondary"
+                            onclick="nextMonth()">
+
+                        &raquo;
+
+                    </button>
+
+                </div>
+
+            </div>
+
+
+            <!-- Week Days -->
+
+            <div class="calendar-weekdays mb-1">
+    <div class="bg-light text-center fw-bold py-2">Sun</div>
+    <div class="bg-light text-center fw-bold py-2">Mon</div>
+    <div class="bg-light text-center fw-bold py-2">Tue</div>
+    <div class="bg-light text-center fw-bold py-2">Wed</div>
+    <div class="bg-light text-center fw-bold py-2">Thu</div>
+    <div class="bg-light text-center fw-bold py-2">Fri</div>
+    <div class="bg-light text-center fw-bold py-2">Sat</div>
+</div>
+
+
+            <!-- Calendar Days -->
+
+            <div id="calendarDays">
+            </div>
+
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- ========================= -->
+<!-- ADD / EDIT EVENT MODAL -->
+<!-- ========================= -->
+
+<div class="modal fade"
+     id="eventModal"
+     tabindex="-1"
+     aria-hidden="true">
+
+    <div class="modal-dialog modal-dialog-centered">
+
+        <div class="modal-content">
+
+
+            <div class="modal-header">
+
+                <h5 class="modal-title"
+                    id="modalTitle">
+
+                    Add Event
+
+                </h5>
+
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal">
+                </button>
+
+            </div>
+
+
+            <form id="eventForm">
+
+                {% csrf_token %}
+
+                <div class="modal-body">
+
+
+                    <input type="hidden"
+                           id="eventId">
+
+
+                    <!-- Title -->
+
+                    <div class="mb-3">
+
+                        <label class="form-label fw-semibold">
+                            Event Title
+                        </label>
+
+                        <input type="text"
+                               class="form-control"
+                               id="title"
+                               placeholder="Enter event title"
+                               required>
+
+                    </div>
+
+
+                    <!-- Description -->
+
+                    <div class="mb-3">
+
+                        <label class="form-label fw-semibold">
+                            Description
+                        </label>
+
+                        <textarea class="form-control"
+                                  id="description"
+                                  rows="3"
+                                  placeholder="Enter description">
+                        </textarea>
+
+                    </div>
+
+
+                    <!-- Dates -->
+
+                    <div class="row">
+
+                        <div class="col-md-6 mb-3">
+
+                            <label class="form-label fw-semibold">
+                                Start Date
+                            </label>
+
+                            <input type="date"
+                                   class="form-control"
+                                   id="startDate"
+                                   required>
+
+                        </div>
+
+
+                        <div class="col-md-6 mb-3">
+
+                            <label class="form-label fw-semibold">
+                                End Date
+                            </label>
+
+                            <input type="date"
+                                   class="form-control"
+                                   id="endDate"
+                                   required>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- Time -->
+
+                    <div class="row">
+
+                        <div class="col-md-6 mb-3">
+
+                            <label class="form-label fw-semibold">
+                                Start Time
+                            </label>
+
+                            <input type="time"
+                                   class="form-control"
+                                   id="startTime">
+
+                        </div>
+
+
+                        <div class="col-md-6 mb-3">
+
+                            <label class="form-label fw-semibold">
+                                End Time
+                            </label>
+
+                            <input type="time"
+                                   class="form-control"
+                                   id="endTime">
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- Category -->
+
+                    <div class="mb-3">
+
+                        <label class="form-label fw-semibold">
+                            Category
+                        </label>
+
+                        <select class="form-select"
+                                id="category">
+
+                            <option value="meeting">
+                                Meeting
+                            </option>
+
+                            <option value="interview">
+                                Interview
+                            </option>
+
+                            <option value="leave">
+                                Leave
+                            </option>
+
+                            <option value="holiday">
+                                Holiday
+                            </option>
+
+                            <option value="training">
+                                Training
+                            </option>
+
+                            <option value="other">
+                                Other
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+                    <!-- All Day -->
+
+                    <div class="form-check">
+
+                        <input class="form-check-input"
+                               type="checkbox"
+                               id="allDay">
+
+                        <label class="form-check-label"
+                               for="allDay">
+
+                            All Day Event
+
+                        </label>
+
+                    </div>
+
+
+                </div>
+
+
+                <div class="modal-footer">
+
+
+                    <button type="button"
+                            class="btn btn-danger me-auto"
+                            id="deleteButton"
+                            onclick="deleteEvent()"
+                            style="display:none;">
+
+                        Delete
+
+                    </button>
+
+
+                    <button type="button"
+                            class="btn btn-secondary"
+                            data-bs-dismiss="modal">
+
+                        Cancel
+
+                    </button>
+
+
+                    <button type="submit"
+                            class="btn btn-primary">
+
+                        Save Event
+
+                    </button>
+
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+
+
+
+
+</div>
+
+
+{% endblock %}
+{% block extra_js %}
+<script>
+    let currentDate = new Date();
+
+    let events = [];
+
+    let eventModal =
+        new bootstrap.Modal(
+            document.getElementById("eventModal")
+        );
+
+
+    /* =========================
+       LOAD EVENTS
+    ========================= */
+
+    async function loadEvents() {
+
+        try {
+
+            const response = await fetch(
+                "{% url 'calendar_events' %}"
+            );
+
+            events = await response.json();
+
+            renderCalendar();
+
+        }
+        catch (error) {
+
+            console.error(error);
+
+            alert("Unable to load calendar events.");
+
+        }
+
+    }
+
+
+    /* =========================
+       RENDER CALENDAR
+    ========================= */
+
+    function renderCalendar() {
+
+        const year =
+            currentDate.getFullYear();
+
+        const month =
+            currentDate.getMonth();
+
+
+        const monthNames = [
+            "January",
+            "February",
+            "March",
+            "April",
+            "May",
+            "June",
+            "July",
+            "August",
+            "September",
+            "October",
+            "November",
+            "December"
+        ];
+
+
+        document.getElementById(
+            "monthYear"
+        ).textContent =
+            `${monthNames[month]} ${year}`;
+
+
+        const firstDay =
+            new Date(
+                year,
+                month,
+                1
+            ).getDay();
+
+
+        const daysInMonth =
+            new Date(
+                year,
+                month + 1,
+                0
+            ).getDate();
+
+
+        const daysInPreviousMonth =
+            new Date(
+                year,
+                month,
+                0
+            ).getDate();
+
+
+        const calendarDays =
+            document.getElementById(
+                "calendarDays"
+            );
+
+
+        calendarDays.innerHTML = "";
+
+
+        /* Previous month */
+
+        for (
+            let i = firstDay - 1;
+            i >= 0;
+            i--
+        ) {
+
+            const day =
+                daysInPreviousMonth - i;
+
+            createDay(
+                calendarDays,
+                day,
+                true,
+                year,
+                month - 1
+            );
+
+        }
+
+
+        /* Current month */
+
+        for (
+            let day = 1;
+            day <= daysInMonth;
+            day++
+        ) {
+
+            createDay(
+                calendarDays,
+                day,
+                false,
+                year,
+                month
+            );
+
+        }
+
+
+        /* Next month */
+
+        const total =
+            calendarDays.children.length;
+
+
+        const remaining =
+            42 - total;
+
+
+        for (
+            let day = 1;
+            day <= remaining;
+            day++
+        ) {
+
+            createDay(
+                calendarDays,
+                day,
+                true,
+                year,
+                month + 1
+            );
+
+        }
+
+    }
+
+
+    /* =========================
+       CREATE DAY
+    ========================= */
+
+    function createDay(
+        container,
+        day,
+        otherMonth,
+        year,
+        month
+    ) {
+
+        const col =
+            document.createElement("div");
+
+        col.className = "calendar-day";
+
+
+        if (otherMonth) {
+
+            col.classList.add(
+                "other-month"
+            );
+
+        }
+
+
+        const date =
+            new Date(
+                year,
+                month,
+                day
+            );
+
+
+        const dateString =
+            formatDate(date);
+
+
+        const today =
+            new Date();
+
+
+        if (
+            date.getDate() === today.getDate() &&
+            date.getMonth() === today.getMonth() &&
+            date.getFullYear() === today.getFullYear()
+        ) {
+
+            col.classList.add("today");
+
+        }
+
+
+        const number =
+            document.createElement("div");
+
+        number.className =
+            "day-number";
+
+        number.textContent =
+            day;
+
+
+        col.appendChild(number);
+
+
+        /* Events */
+
+        const dayEvents =
+            events.filter(event => {
+
+                const start =
+                    event.start.substring(
+                        0,
+                        10
+                    );
+
+                const end =
+                    event.end
+                        ? event.end.substring(
+                            0,
+                            10
+                        )
+                        : start;
+
+
+                return (
+                    dateString >= start &&
+                    dateString <= end
+                );
+
+            });
+
+
+        dayEvents.forEach(event => {
+
+            const eventElement =
+                document.createElement("div");
+
+
+            eventElement.className =
+                `calendar-event ${event.category}`;
+
+
+            eventElement.textContent =
+                event.title;
+
+
+            eventElement.title =
+                event.title;
+
+
+            eventElement.onclick =
+                function(e) {
+
+                    e.stopPropagation();
+
+                    openEditModal(event);
+
+                };
+
+
+            col.appendChild(
+                eventElement
+            );
+
+        });
+
+
+        /* Click date */
+
+        col.onclick =
+            function() {
+
+                openCreateModal(
+                    dateString
+                );
+
+            };
+
+
+        container.appendChild(col);
+
+    }
+
+
+    /* =========================
+       DATE FORMAT
+    ========================= */
+
+    function formatDate(date) {
+
+        const year =
+            date.getFullYear();
+
+
+        const month =
+            String(
+                date.getMonth() + 1
+            ).padStart(2, "0");
+
+
+        const day =
+            String(
+                date.getDate()
+            ).padStart(2, "0");
+
+
+        return `${year}-${month}-${day}`;
+
+    }
+
+
+    /* =========================
+       NAVIGATION
+    ========================= */
+
+    function previousMonth() {
+
+        currentDate.setMonth(
+            currentDate.getMonth() - 1
+        );
+
+        renderCalendar();
+
+    }
+
+
+    function nextMonth() {
+
+        currentDate.setMonth(
+            currentDate.getMonth() + 1
+        );
+
+        renderCalendar();
+
+    }
+
+
+    function goToday() {
+
+        currentDate =
+            new Date();
+
+        renderCalendar();
+
+    }
+
+
+    /* =========================
+       CREATE MODAL
+    ========================= */
+
+    function openCreateModal(
+        date = null
+    ) {
+
+        document.getElementById(
+            "modalTitle"
+        ).textContent =
+            "Add Event";
+
+
+        document.getElementById(
+            "eventForm"
+        ).reset();
+
+
+        document.getElementById(
+            "eventId"
+        ).value = "";
+
+
+        document.getElementById(
+            "deleteButton"
+        ).style.display =
+            "none";
+
+
+        if (date) {
+
+            document.getElementById(
+                "startDate"
+            ).value =
+                date;
+
+
+            document.getElementById(
+                "endDate"
+            ).value =
+                date;
+
+        }
+
+
+        eventModal.show();
+
+    }
+
+
+    /* =========================
+       EDIT MODAL
+    ========================= */
+
+    function openEditModal(event) {
+
+        document.getElementById(
+            "modalTitle"
+        ).textContent =
+            "Edit Event";
+
+
+        document.getElementById(
+            "eventId"
+        ).value =
+            event.id;
+
+
+        document.getElementById(
+            "title"
+        ).value =
+            event.title;
+
+
+        document.getElementById(
+            "description"
+        ).value =
+            event.description || "";
+
+
+        document.getElementById(
+            "startDate"
+        ).value =
+            event.start.substring(
+                0,
+                10
+            );
+
+
+        document.getElementById(
+            "endDate"
+        ).value =
+            event.end.substring(
+                0,
+                10
+            );
+
+
+        document.getElementById(
+            "category"
+        ).value =
+            event.category;
+
+
+        document.getElementById(
+            "allDay"
+        ).checked =
+            event.allDay;
+
+
+        if (
+            event.start.includes("T")
+        ) {
+
+            document.getElementById(
+                "startTime"
+            ).value =
+                event.start.substring(
+                    11,
+                    16
+                );
+
+        }
+
+
+        if (
+            event.end.includes("T")
+        ) {
+
+            document.getElementById(
+                "endTime"
+            ).value =
+                event.end.substring(
+                    11,
+                    16
+                );
+
+        }
+
+
+        document.getElementById(
+            "deleteButton"
+        ).style.display =
+            "block";
+
+
+        eventModal.show();
+
+    }
+
+
+    /* =========================
+       CSRF
+    ========================= */
+
+    function getCSRFToken() {
+
+        return document.querySelector(
+            "[name=csrfmiddlewaretoken]"
+        ).value;
+
+    }
+
+
+    /* =========================
+       SAVE EVENT
+    ========================= */
+
+    document.getElementById(
+        "eventForm"
+    ).addEventListener(
+        "submit",
+        async function(e) {
+
+            e.preventDefault();
+
+
+            const eventId =
+                document.getElementById(
+                    "eventId"
+                ).value;
+
+
+            const data =
+                new FormData();
+
+
+            data.append(
+                "title",
+                document.getElementById(
+                    "title"
+                ).value
+            );
+
+
+            data.append(
+                "description",
+                document.getElementById(
+                    "description"
+                ).value
+            );
+
+
+            data.append(
+                "start_date",
+                document.getElementById(
+                    "startDate"
+                ).value
+            );
+
+
+            data.append(
+                "end_date",
+                document.getElementById(
+                    "endDate"
+                ).value
+            );
+
+
+            data.append(
+                "start_time",
+                document.getElementById(
+                    "startTime"
+                ).value
+            );
+
+
+            data.append(
+                "end_time",
+                document.getElementById(
+                    "endTime"
+                ).value
+            );
+
+
+            data.append(
+                "category",
+                document.getElementById(
+                    "category"
+                ).value
+            );
+
+
+            data.append(
+                "all_day",
+                document.getElementById(
+                    "allDay"
+                ).checked
+                    ? "true"
+                    : "false"
+            );
+
+
+            let url;
+
+
+            if (eventId) {
+
+                url =
+                    `/hr/calendar/events/${eventId}/update/`;
+
+            }
+            else {
+
+                url =
+                    "{% url 'create_calendar_event' %}";
+
+            }
+
+
+            try {
+
+                const response =
+                    await fetch(
+                        url,
+                        {
+                            method: "POST",
+
+                            headers: {
+                                "X-CSRFToken":
+                                    getCSRFToken()
+                            },
+
+                            body: data
+                        }
+                    );
+
+
+                const result =
+                    await response.json();
+
+
+                if (result.success) {
+
+                    eventModal.hide();
+
+                    await loadEvents();
+
+                }
+                else {
+
+                    alert(
+                        result.error
+                    );
+
+                }
+
+            }
+            catch (error) {
+
+                console.error(error);
+
+                alert(
+                    "Something went wrong."
+                );
+
+            }
+
+        }
+    );
+
+
+    /* =========================
+       DELETE EVENT
+    ========================= */
+
+    async function deleteEvent() {
+
+        const eventId =
+            document.getElementById(
+                "eventId"
+            ).value;
+
+
+        if (!eventId) {
+            return;
+        }
+
+
+        if (
+            !confirm(
+                "Are you sure you want to delete this event?"
+            )
+        ) {
+
+            return;
+
+        }
+
+
+        try {
+
+            const response =
+                await fetch(
+                    `/hr/calendar/events/${eventId}/delete/`,
+                    {
+                        method: "POST",
+
+                        headers: {
+                            "X-CSRFToken":
+                                getCSRFToken()
+                        }
+
+                    }
+                );
+
+
+            const result =
+                await response.json();
+
+
+            if (result.success) {
+
+                eventModal.hide();
+
+                await loadEvents();
+
+            }
+            else {
+
+                alert(
+                    result.error
+                );
+
+            }
+
+        }
+        catch (error) {
+
+            console.error(error);
+
+            alert(
+                "Unable to delete event."
+            );
+
+        }
+
+    }
+
+
+    /* =========================
+       INITIALIZE
+    ========================= */
+
+    loadEvents();
+</script>
+{% endblock %}
