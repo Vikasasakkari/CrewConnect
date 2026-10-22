@@ -16,11 +16,14 @@ provides a database.
    ```powershell
    python -m venv venv
    .\venv\Scripts\Activate.ps1
-   pip install -r requirements.txt
+   pip install -r requirements.txt -r requirements-mysql.txt
    ```
 
-2. Copy `.env.example` to `.env` and set your local database credentials.
-   `.env` is ignored by Git. Set `SECRET_KEY` to a private random value.
+2. The extra `requirements-mysql.txt` installs the native MySQL driver needed
+   for local MySQL development. For PostgreSQL-only environments, install just
+   `requirements.txt`. Copy `.env.example` to `.env` and set your local
+   database credentials. `.env` is ignored by Git. Set `SECRET_KEY` to a
+   private random value.
 3. Run the database migrations and start Django:
 
    ```powershell
