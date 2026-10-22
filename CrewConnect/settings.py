@@ -101,12 +101,21 @@ WSGI_APPLICATION = 'CrewConnect.wsgi.application'
 # }
 
 if os.getenv("DATABASE_URL"):
+    database_url = os.environ["DATABASE_URL"]
+    database_scheme = database_url.partition("://")[0].lower()
     DATABASES = {
         "default": dj_database_url.config(
             conn_max_age=600,
-            ssl_require=not DEBUG,
+            ssl_require=not DEBUG and database_scheme in {"postgres", "postgresql"},
         )
     }
+    if not DEBUG and database_scheme in {"mysql", "mysql2"}:
+        DATABASES["default"].setdefault("OPTIONS", {}).update(
+            {
+                "ssl_verify_cert": True,
+                "ssl_verify_identity": True,
+            }
+        )
 else:
     DATABASES = {
         "default": {
