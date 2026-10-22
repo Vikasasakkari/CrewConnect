@@ -9,6 +9,10 @@ static websites; it cannot run this Django application, its database, or its
 login and HR features. A live Django site needs a server that runs Python and
 provides a database.
 
+When running on Vercel, the deployment's Vercel hostnames are added to
+Django's allowed hosts automatically. If you attach a custom domain, add its
+hostname (without `https://`) to the `ALLOWED_HOSTS` environment variable.
+
 ## Local development
 
 1. Create and activate a virtual environment, then install the dependencies:

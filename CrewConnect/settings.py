@@ -38,6 +38,12 @@ ALLOWED_HOSTS = [
     for host in os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
     if host.strip()
 ]
+vercel_hosts = [
+    os.getenv(key, "").strip()
+    for key in ("VERCEL_URL", "VERCEL_PROJECT_PRODUCTION_URL", "VERCEL_BRANCH_URL")
+    if os.getenv(key, "").strip()
+]
+ALLOWED_HOSTS.extend(host for host in vercel_hosts if host not in ALLOWED_HOSTS)
 
 
 # Application definition
@@ -178,3 +184,7 @@ if not DEBUG:
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
+    CSRF_TRUSTED_ORIGINS = [
+        f"https://{host}"
+        for host in vercel_hosts
+    ]
